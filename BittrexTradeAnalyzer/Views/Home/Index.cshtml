@@ -1,4 +1,5 @@
 ﻿@model BittrexTradeAnalyzer.Models.TradeInput
+@using BittrexTradeAnalyzer.Models
 
 @{
     ViewBag.Title = "TradeAnalyzer";
@@ -64,7 +65,19 @@
 }
 
 <div>
+  @{
+    var td = (TradeData)ViewBag.TradeData;
+    if (td != null)
+    {
+      Html.RenderPartial("TradeDataList", td.RealizedTrades);
+      <div>
+        <h3>Unrealized P/L: @td.UnrealizedTrade.ProfitLoss.ToString("#.##") % P/L Value:@td.UnrealizedTrade.ProfitLossValue.ToString("#.####") @Model.Coin Quantity: @td.UnrealizedTrade.RemainingQuantity.ToString("#.####") Last price:@td.UnrealizedTrade.LastPrice.ToString("#.########")</h3>
+      </div>
+    }
+
+  }
   @Html.Raw(ViewBag.Result)
+  
 </div>
 
 <hr/>
