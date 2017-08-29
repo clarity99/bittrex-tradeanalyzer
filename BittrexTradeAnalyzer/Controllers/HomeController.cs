@@ -1,9 +1,11 @@
 ﻿using Bittrex;
 using BittrexTradeAnalyzer.Models;
+using Newtonsoft.Json;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Web;
 using System.Web.Mvc;
 
@@ -11,10 +13,15 @@ namespace BittrexTradeAnalyzer.Controllers
 {
   public class HomeController : Controller
   {
+    public HomeController()
+    {
+      CoinMarketData();
+    }
+
     public ActionResult BalanceOne()
     {
       var v = new TradeInput();
-      v.NoOfTrades = 20;
+      v.NoOfTrades = 200;
       return View(v);
     }
 
@@ -31,29 +38,66 @@ namespace BittrexTradeAnalyzer.Controllers
     
     public ActionResult Index()
     {
-      return View("GetAllBalances");
+      var cookieKey = Request.Cookies["apikey"];
+      var cookiesecret = Request.Cookies["apisecret"];
+      var ti = new TradeInput
+      {
+        ApiKey = cookieKey?.Value,
+        ApiSecret = cookiesecret?.Value
+      };
+      return View("GetAllBalances", ti);
     }
 
     [HttpPost]
-    public ActionResult Index(string apikey, string apisecret, string baseCurrency)
+    public ActionResult Index(string apikey, string apisecret, string baseCurrency, bool rememberKey)
     {
       Session.Add("apikey", apikey);
       Session.Add("apisecret", apisecret);
+      if (rememberKey)
+      {
+        var cookieKey = new HttpCookie("apikey", apikey);
+        cookieKey.Secure = true;
+        cookieKey.HttpOnly = true;
+        cookieKey.Expires = DateTime.Now.AddMonths(1);
+        var cookieSecret = new HttpCookie("apisecret", apisecret);
+        cookieSecret.Secure = true;
+        cookieSecret.HttpOnly = true;
+        cookieSecret.Expires = DateTime.Now.AddMonths(1);
+        Response.Cookies.Add(cookieKey);
+        Response.Cookies.Add(cookieSecret);
+      } else
+      {
+        var cookieKey = new HttpCookie("apikey", "");
+        cookieKey.Secure = true;
+        cookieKey.HttpOnly = true;
+        cookieKey.Expires = DateTime.Now.AddMonths(-1);
+        var cookieSecret = new HttpCookie("apisecret", "");
+        cookieSecret.Secure = true;
+        cookieSecret.HttpOnly = true;
+        cookieSecret.Expires = DateTime.Now.AddMonths(-1);
+        Response.Cookies.Add(cookieKey);
+        Response.Cookies.Add(cookieSecret);
+      }
       var d = GetTradeDataForPortfolio(apikey, apisecret, baseCurrency);
-      return View("GetAllBalancesPost", d.OrderByDescending(x=>x.TradePerCoin.RealizedTrade.ProfitLoss));
+      return View("GetAllBalancesPost", d.OrderByDescending(x=>x.BalanceEUR));
     }
 
     public ActionResult TradesPerCoin(string id, string basecurrency)
     {
       string apikey = (string)Session["apikey"];
       string apisecret = (string)Session["apisecret"];
+      if (string.IsNullOrEmpty(apikey) || string.IsNullOrEmpty(apisecret))
+      {
+        return RedirectToAction("Index");
+      }
+
       var inp = new TradeInput
       {
         ApiKey = apikey,
         ApiSecret = apisecret,
         Coin = id,
         BaseCurrency = basecurrency,
-        NoOfTrades = 20
+        NoOfTrades = 200
       };
       TradeData tradedata = CalculateTradeData(inp);
       //ViewBag.Result = outp;
@@ -70,17 +114,17 @@ namespace BittrexTradeAnalyzer.Controllers
       bittrex.Initialise(new ExchangeContext { ApiKey = apikey, Secret = apisecret, QuoteCurrency ="USDT", Simulate = false });
       var bal = bittrex.GetBalances();
       var l = new List<TotalPortfolioTradeData>();
-      foreach (var b in bal.Where(x => x.Balance > 0))
+      foreach (var b in bal.Where(x => x.Balance > 0).AsParallel().WithDegreeOfParallelism(10))
       {
         var r1 = GetTradeDataForBase(apikey, apisecret, b, "USDT");
-        if (r1 != null)
+        if (r1?.TradePerCoin.RealizedTrades.Any() == true || r1?.TradePerCoin.UnrealizedTrade != null)
           l.Add(r1);
         
         r1 = GetTradeDataForBase(apikey, apisecret, b, "BTC");
-        if (r1 != null)
+        if (r1?.TradePerCoin.RealizedTrades.Any() == true || r1?.TradePerCoin.UnrealizedTrade != null)
           l.Add(r1);
         r1 = GetTradeDataForBase(apikey, apisecret, b, "ETH");
-        if (r1 != null)
+        if (r1?.TradePerCoin.RealizedTrades.Any() == true || r1?.TradePerCoin.UnrealizedTrade != null)
           l.Add(r1);
 
       }
@@ -88,7 +132,20 @@ namespace BittrexTradeAnalyzer.Controllers
       return l;
     }
 
-    private static TotalPortfolioTradeData GetTradeDataForBase(string apikey, string apisecret, AccountBalance b, string baseCurrency)
+    Dictionary<string, CoinMarket> cmktall;
+
+    public void CoinMarketData()
+    {
+      var cmktapi = new HttpClient().GetStringAsync("https://api.coinmarketcap.com/v1/ticker/?convert=EUR&limit=1800").Result;
+
+      // var cmkt = new[] { new CoinMarket { Co = "", price_eur = (decimal)0.0, percent_change_1h = "", percent_change_24h = "" } };
+      cmktall = JsonConvert.DeserializeObject<CoinMarket[]>(cmktapi).Distinct(new CMCompare()).ToDictionary(x => x.symbol);
+      //cmktall.Add("MSP", new CoinMarket { price_eur = 0.03546M, symbol = "MSP", price_btc = 0.00002M });
+      cmktall.Add("XTZ", new CoinMarket { price_eur = 0.0001666666666666667M * cmktall["BTC"].price_eur, symbol = "XTZ", price_btc = 0.0001666666666666667M });
+
+    }
+
+    private TotalPortfolioTradeData GetTradeDataForBase(string apikey, string apisecret, AccountBalance b, string baseCurrency)
     {
       try
       {
@@ -98,14 +155,19 @@ namespace BittrexTradeAnalyzer.Controllers
           ApiSecret = apisecret,
           BaseCurrency = baseCurrency,
           Coin = b.Currency,
-          NoOfTrades = 20
+          NoOfTrades = 200
         });
+        var btcvalue = b.Balance * cmktall[b.Currency].price_btc;
+        var eurvalue = b.Balance * cmktall[b.Currency].price_eur;
+        var usdvalue = b.Balance * cmktall[b.Currency].price_usd;
         var r = new TotalPortfolioTradeData
         {
           Coin = b.Currency,
           BaseCurrency = baseCurrency,
           Balance = b.Balance,
-          
+          BalanceBTC = btcvalue ?? 0,
+          BalanceEUR = eurvalue ?? 0,
+          BalanceUSD = usdvalue ?? 0,
           TradePerCoin = td
         };
         return r;

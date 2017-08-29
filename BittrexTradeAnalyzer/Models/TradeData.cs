@@ -54,6 +54,9 @@ namespace BittrexTradeAnalyzer.Models
     public string BaseCurrency { get; set; }
     public decimal Balance { get; set; }
     public decimal Value { get; set; }
+    public decimal BalanceBTC { get; set; }
+    public decimal BalanceEUR { get; set; }
+    public decimal BalanceUSD { get; set; }
     public TradeData TradePerCoin { get; set; }
   }
 

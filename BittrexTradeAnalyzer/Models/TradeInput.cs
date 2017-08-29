@@ -9,6 +9,7 @@ namespace BittrexTradeAnalyzer.Models
   {
     public string ApiKey { get; set; }
     public string ApiSecret { get; set; }
+    public bool RememberKey { get; set; }
     public string Coin { get; set; }
     public string BaseCurrency { get; set; }
     public int NoOfTrades { get; set; }

@@ -6,6 +6,8 @@
 }
 
 <h2>Trades for @Model.Coin</h2>
+<a href="https://bittrex.com/Market/Index?MarketName=@Model.BaseCurrency-@Model.Coin">Open Bittrex market</a>
+
 @{
   var td = (TradeData)ViewBag.TradeData;
   if (td != null)
@@ -26,6 +28,8 @@
   }
 
 }
+
+
 
 
 @helper RedGreen(decimal value)
