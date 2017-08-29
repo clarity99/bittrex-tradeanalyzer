@@ -27,6 +27,7 @@
     </NuGetPackageImportStamp>
     <ApplicationInsightsResourceId>/subscriptions/30b08c66-faa1-4423-9391-6cc8ec409c7e/resourcegroups/Default-ApplicationInsights-EastUS/providers/microsoft.insights/components/BittrexTradeAnalyzer</ApplicationInsightsResourceId>
     <ApplicationInsightsAnnotationResourceId>/subscriptions/30b08c66-faa1-4423-9391-6cc8ec409c7e/resourcegroups/Default-ApplicationInsights-EastUS/providers/microsoft.insights/components/BittrexTradeAnalyzer</ApplicationInsightsAnnotationResourceId>
+    <Use64BitIISExpress />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -209,9 +210,12 @@
     <Content Include="Views\Shared\_Layout.cshtml" />
     <Content Include="Views\Home\About.cshtml" />
     <Content Include="Views\Home\Contact.cshtml" />
-    <Content Include="Views\Home\Index.cshtml" />
+    <Content Include="Views\Home\BalanceOne.cshtml" />
     <Content Include="Views\Home\IndexPost.cshtml" />
     <Content Include="Views\Shared\TradeDataList.cshtml" />
+    <Content Include="Views\Home\GetAllBalances.cshtml" />
+    <Content Include="Views\Home\GetAllBalancesPost.cshtml" />
+    <Content Include="Views\Home\TradesPerCoin.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

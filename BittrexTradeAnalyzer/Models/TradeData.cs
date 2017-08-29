@@ -21,10 +21,12 @@ namespace BittrexTradeAnalyzer.Models
     [DisplayFormat(DataFormatString = "{0:#.########}", ApplyFormatInEditMode = true)]
     public decimal TotalPrice { get; set; }
     public decimal ProfitLoss { get; set; }
+    [DisplayFormat(DataFormatString = "{0:#.########}", ApplyFormatInEditMode = true)]
+    public decimal ProfitLossValue { get; set; }
     public DateTime TimeStamp { get; set; }
   }
 
-  public class UnrealizedTrade
+  public class TotalTrade
   {
     [DisplayFormat(DataFormatString = "{0:#.########}", ApplyFormatInEditMode = true)]
     public decimal RemainingQuantity { get; set; }
@@ -42,8 +44,17 @@ namespace BittrexTradeAnalyzer.Models
   public class TradeData
   {
     public IList<RealizedTradeData> RealizedTrades { get; set; }
-    public UnrealizedTrade UnrealizedTrade { get; set; }
+    public TotalTrade UnrealizedTrade { get; set; }
+    public TotalTrade RealizedTrade { get; set; }
   }
 
+  public class TotalPortfolioTradeData
+  {
+    public string Coin { get; set; }
+    public string BaseCurrency { get; set; }
+    public decimal Balance { get; set; }
+    public decimal Value { get; set; }
+    public TradeData TradePerCoin { get; set; }
+  }
 
 }

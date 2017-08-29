@@ -1,0 +1,41 @@
+﻿@model BittrexTradeAnalyzer.Models.TradeInput
+@using BittrexTradeAnalyzer.Models
+
+@{
+    ViewBag.Title = "BalancePerCoin";
+}
+
+<h2>Trades for @Model.Coin</h2>
+@{
+  var td = (TradeData)ViewBag.TradeData;
+  if (td != null)
+  {
+    Html.RenderPartial("TradeDataList", td.RealizedTrades);
+    <div>
+      @if (td.UnrealizedTrade != null)
+        {
+        <h3>Unrealized P/L: @td.UnrealizedTrade.ProfitLoss.ToString("#.##") % P/L Value:@RedGreen(td.UnrealizedTrade.ProfitLossValue) @Model.Coin Quantity: @td.UnrealizedTrade.RemainingQuantity.ToString("#.####") Last price:@td.UnrealizedTrade.LastPrice.ToString("#.########")</h3>
+      }
+    </div>
+      <div>
+        @if (td.RealizedTrade != null)
+        {
+          <h3>Realized P/L: @td.RealizedTrade.ProfitLoss.ToString("#.##") % P/L Value:@RedGreen(td.RealizedTrade.ProfitLossValue) @Model.BaseCurrency Quantity: @td.RealizedTrade.RemainingQuantity.ToString("#.####")</h3>
+        }
+      </div>
+  }
+
+}
+
+
+@helper RedGreen(decimal value)
+{
+  if (value < 0)
+  {
+      <span style="color:red">@(value.ToString("#.##"))</span>
+  }
+  else
+  {
+      <span style="color:green">@(value.ToString("#.##"))</span>
+  }
+}

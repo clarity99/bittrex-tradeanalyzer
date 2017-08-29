@@ -1,0 +1,91 @@
+﻿@model BittrexTradeAnalyzer.Models.TradeInput
+@using BittrexTradeAnalyzer.Models
+
+@{
+    ViewBag.Title = "TradeAnalyzer";
+}
+
+<h2>Analyze this!</h2>
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+    
+    <div class="form-horizontal">
+        
+        <hr />
+        Please only give INFO permission to the api key you use here!!!
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        <div class="form-group">
+            @Html.LabelFor(model => model.ApiKey, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.ApiKey, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.ApiKey, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.ApiSecret, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.ApiSecret, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.ApiSecret, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Coin, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.Coin, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.Coin, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.BaseCurrency, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.BaseCurrency, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.BaseCurrency, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.NoOfTrades, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.NoOfTrades, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.NoOfTrades, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <input type="submit" value="Analyze!" class="btn btn-default" />
+            </div>
+        </div>
+    </div>
+}
+
+<div>
+  @{
+    var td = (TradeData)ViewBag.TradeData;
+    if (td != null)
+    {
+      Html.RenderPartial("TradeDataList", td.RealizedTrades);
+      <div>
+        @if (td.UnrealizedTrade != null)
+        {
+        <h3>Unrealized P/L: @td.UnrealizedTrade.ProfitLoss.ToString("#.##") % P/L Value:@td.UnrealizedTrade.ProfitLossValue.ToString("#.####") @Model.Coin Quantity: @td.UnrealizedTrade.RemainingQuantity.ToString("#.####") Last price:@td.UnrealizedTrade.LastPrice.ToString("#.########")</h3>
+        }
+      </div>
+      <div>
+        @if (td.RealizedTrade != null)
+        {
+          <h3>Realized P/L: @td.RealizedTrade.ProfitLoss.ToString("#.##") % P/L Value:@td.RealizedTrade.ProfitLossValue.ToString("#.####") @Model.BaseCurrency Quantity: @td.RealizedTrade.RemainingQuantity.ToString("#.####")</h3>
+        }
+      </div>
+    }
+
+  }
+  @Html.Raw(ViewBag.Result)
+  
+</div>
+

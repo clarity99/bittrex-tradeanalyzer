@@ -1,0 +1,58 @@
+﻿@model IEnumerable<BittrexTradeAnalyzer.Models.TotalPortfolioTradeData>
+
+@{
+    ViewBag.Title = "GetAllBalancesPost";
+}
+
+<h2>Portfolio P/L</h2>
+
+
+<table class="table">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.Coin)
+        </th>
+      <th>
+        Balance
+      </th>
+      <th>
+        Realized P/L
+      </th>
+      <th>
+        Unrealized P/L
+      </th>
+        <th></th>
+    </tr>
+
+@foreach (var item in Model) {
+    <tr>
+        <td>
+          @Html.ActionLink($"{item.Coin}-{item.BaseCurrency}", "TradesPerCoin", new { id=item.Coin, basecurrency=item.BaseCurrency }) 
+            
+        </td>
+      <td>
+        @Html.DisplayFor(modelItem => item.Balance)
+      </td>
+      <td>
+        @RedGreen(item.TradePerCoin.RealizedTrade?.ProfitLoss)
+      </td>
+      <td>
+        @RedGreen(item.TradePerCoin.UnrealizedTrade?.ProfitLoss)
+      </td>
+        
+    </tr>
+}
+
+</table>
+
+@helper RedGreen(decimal? value)
+    {
+if (value < 0)
+{
+    <span style="color:red">@(value?.ToString("#.##"))</span>
+}
+else
+{
+    <span style="color:green">@(value?.ToString("#.##"))</span>
+}
+}

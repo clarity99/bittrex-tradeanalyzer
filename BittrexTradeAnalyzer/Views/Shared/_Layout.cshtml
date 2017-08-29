@@ -34,7 +34,8 @@
             </div>
             <div class="navbar-collapse collapse">
                 <ul class="nav navbar-nav">
-                    <li>@Html.ActionLink("Home", "Index", "Home")</li>
+                    <li>@Html.ActionLink("P/L for portfolio", "Index", "Home")</li>
+                  <li>@Html.ActionLink("P/L per coin", "BalanceOne", "Home")</li>
                     
                 </ul>
             </div>
@@ -44,6 +45,14 @@
         @RenderBody()
         <hr />
         <footer>
+          
+          If you find this useful, please
+          <a href="bitcoin:13ru6pDZWpnbuFMpVFRdLJEVPnhfeoo9mN?amount=0.001" onclick="javascript: document.getElementById('donatebtc').style.display='block'">
+            Donate BTC
+           
+          </a>
+          <img id="donatebtc" style="display:none" src="~/Content/bccdumpDonationCC.png" />
+          Address: 13ru6pDZWpnbuFMpVFRdLJEVPnhfeoo9mN
             <p>&copy; @DateTime.Now.Year - (c) PhoenixCat. Github: <a href="https://github.com/clarity99/bittrex-tradeanalyzer">https://github.com/clarity99/bittrex-tradeanalyzer</a> </p>
         </footer>
     </div>

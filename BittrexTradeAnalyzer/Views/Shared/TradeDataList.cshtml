@@ -15,15 +15,18 @@
         <th>
             @Html.DisplayNameFor(model => model.PricePerUnit)
         </th>
-        <th>
+        @*<th>
             @Html.DisplayNameFor(model => model.AverageBuy)
-        </th>
+        </th>*@
         <th>
             @Html.DisplayNameFor(model => model.TotalPrice)
         </th>
         <th>
             @Html.DisplayNameFor(model => model.ProfitLoss)
         </th>
+      <th>
+        @Html.DisplayNameFor(model => model.ProfitLossValue)
+      </th>
         <th>
             @Html.DisplayNameFor(model => model.TimeStamp)
         </th>
@@ -44,15 +47,18 @@
         <td>
             @Html.DisplayFor(modelItem => item.PricePerUnit)
         </td>
-        <td>
+        @*<td>
             @Html.DisplayFor(modelItem => item.AverageBuy)
-        </td>
+        </td>*@
         <td>
             @Html.DisplayFor(modelItem => item.TotalPrice)
         </td>
         <td>
-            @Html.DisplayFor(modelItem => item.ProfitLoss)
+            @RedGreen(item.ProfitLoss)
         </td>
+      <td>
+        @Html.DisplayFor(modelItem => item.ProfitLossValue)
+      </td>
         <td>
             @Html.DisplayFor(modelItem => item.TimeStamp)
         </td>
@@ -61,3 +67,16 @@
 }
 
 </table>
+
+
+@helper RedGreen(decimal value)
+    {
+if (value < 0)
+{
+    <span style="color:red">@(value.ToString("#.##"))</span>
+}
+else
+{
+    <span style="color:green">@(value.ToString("#.##"))</span>
+}
+}

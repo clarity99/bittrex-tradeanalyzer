@@ -1,0 +1,40 @@
+﻿@model BittrexTradeAnalyzer.Models.TradeInput
+@{
+    ViewBag.Title = "GetAllBalances";
+}
+
+<h2>Profit/Loss for Bittrex portfolio</h2>
+
+@using (Html.BeginForm())
+{
+  @Html.AntiForgeryToken()
+
+  <div class="form-horizontal">
+
+    <hr />
+    Please only give INFO permission to the api key you use here!!!
+    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+    <div class="form-group">
+      <span class="control-label col-md-2">ApiKey</span>
+      <div class="col-md-2">
+        @Html.EditorFor(model => Model.ApiKey, new { htmlAttributes = new { @class = "form-control" } })
+        @Html.ValidationMessageFor(model => model.ApiKey, "", new { @class = "text-danger" })
+      </div>
+    </div>
+
+    <div class="form-group">
+      <span class="control-label col-md-2">ApiKey</span>
+      <div class="col-md-2">
+        @Html.EditorFor(model =>Model.ApiSecret, new { htmlAttributes = new { @class = "form-control" } })
+        @Html.ValidationMessageFor(model => model.ApiSecret, "", new { @class = "text-danger" })
+      </div>
+    </div>
+
+    
+    <div class="form-group">
+      <div class="col-md-offset-2 col-md-2">
+        <input type="submit" value="Analyze!" class="btn btn-default" />
+      </div>
+    </div>
+    </div>
+}

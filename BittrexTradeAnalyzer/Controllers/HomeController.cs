@@ -11,7 +11,7 @@ namespace BittrexTradeAnalyzer.Controllers
 {
   public class HomeController : Controller
   {
-    public ActionResult Index()
+    public ActionResult BalanceOne()
     {
       var v = new TradeInput();
       v.NoOfTrades = 20;
@@ -19,13 +19,101 @@ namespace BittrexTradeAnalyzer.Controllers
     }
 
     [HttpPost]
-    public ActionResult Index(TradeInput inp)
+    public ActionResult BalanceOne(TradeInput inp)
     {
 
       TradeData tradedata = CalculateTradeData(inp);
       //ViewBag.Result = outp;
       ViewBag.TradeData = tradedata;
       return View(inp);
+    }
+
+    
+    public ActionResult Index()
+    {
+      return View("GetAllBalances");
+    }
+
+    [HttpPost]
+    public ActionResult Index(string apikey, string apisecret, string baseCurrency)
+    {
+      Session.Add("apikey", apikey);
+      Session.Add("apisecret", apisecret);
+      var d = GetTradeDataForPortfolio(apikey, apisecret, baseCurrency);
+      return View("GetAllBalancesPost", d.OrderByDescending(x=>x.TradePerCoin.RealizedTrade.ProfitLoss));
+    }
+
+    public ActionResult TradesPerCoin(string id, string basecurrency)
+    {
+      string apikey = (string)Session["apikey"];
+      string apisecret = (string)Session["apisecret"];
+      var inp = new TradeInput
+      {
+        ApiKey = apikey,
+        ApiSecret = apisecret,
+        Coin = id,
+        BaseCurrency = basecurrency,
+        NoOfTrades = 20
+      };
+      TradeData tradedata = CalculateTradeData(inp);
+      //ViewBag.Result = outp;
+      ViewBag.TradeData = tradedata;
+      return View(inp);
+    }
+
+    private  IEnumerable<TotalPortfolioTradeData> GetTradeDataForPortfolio(string apikey, string apisecret, string quoteCurrency)
+    {
+
+      var bittrex = new Exchange();
+      
+      
+      bittrex.Initialise(new ExchangeContext { ApiKey = apikey, Secret = apisecret, QuoteCurrency ="USDT", Simulate = false });
+      var bal = bittrex.GetBalances();
+      var l = new List<TotalPortfolioTradeData>();
+      foreach (var b in bal.Where(x => x.Balance > 0))
+      {
+        var r1 = GetTradeDataForBase(apikey, apisecret, b, "USDT");
+        if (r1 != null)
+          l.Add(r1);
+        
+        r1 = GetTradeDataForBase(apikey, apisecret, b, "BTC");
+        if (r1 != null)
+          l.Add(r1);
+        r1 = GetTradeDataForBase(apikey, apisecret, b, "ETH");
+        if (r1 != null)
+          l.Add(r1);
+
+      }
+      
+      return l;
+    }
+
+    private static TotalPortfolioTradeData GetTradeDataForBase(string apikey, string apisecret, AccountBalance b, string baseCurrency)
+    {
+      try
+      {
+        var td = CalculateTradeData(new TradeInput
+        {
+          ApiKey = apikey,
+          ApiSecret = apisecret,
+          BaseCurrency = baseCurrency,
+          Coin = b.Currency,
+          NoOfTrades = 20
+        });
+        var r = new TotalPortfolioTradeData
+        {
+          Coin = b.Currency,
+          BaseCurrency = baseCurrency,
+          Balance = b.Balance,
+          
+          TradePerCoin = td
+        };
+        return r;
+      }
+      catch (Exception ex)
+      {
+        return null;
+      }
     }
 
     private static TradeData CalculateTradeData(TradeInput inp)
@@ -35,7 +123,7 @@ namespace BittrexTradeAnalyzer.Controllers
       var basecurr = inp.BaseCurrency;
       bittrex.Initialise(new ExchangeContext { ApiKey = inp.ApiKey, Secret = inp.ApiSecret, QuoteCurrency = basecurr.ToUpper(), Simulate = false });
       var tick = bittrex.GetTicker(coin);
-      var hist = bittrex.GetOrderHistory(coin, inp.NoOfTrades).OrderBy(x => x.TimeStamp);
+      var hist = bittrex.GetOrderHistory(coin, inp.NoOfTrades).OrderBy(x => x.TimeStamp).Take(inp.NoOfTrades);
       string outp = "";
 
       //    var buys = hist.Where(x=>x.OrderType == OpenOrderType.Limit_Buy);
@@ -44,6 +132,9 @@ namespace BittrexTradeAnalyzer.Controllers
       //    buyQuantity.Dump("buyq");
       decimal averageBuy = 0;
       decimal buyQuantity = 0;
+      decimal totalBuyQuantity = 0;
+      decimal averageSell = 0;
+
       bool first = true;
       var tradedata = new TradeData()
       {
@@ -55,6 +146,7 @@ namespace BittrexTradeAnalyzer.Controllers
         {
           decimal prevBuyQ = buyQuantity;
           buyQuantity += h.Quantity - h.QuantityRemaining;
+          totalBuyQuantity += h.Quantity - h.QuantityRemaining;
           averageBuy = (averageBuy * prevBuyQ) / buyQuantity + (h.PricePerUnit * ((h.Quantity - h.QuantityRemaining) / buyQuantity));
           //outp += $"Bought {h.Quantity - h.QuantityRemaining} {coin} at {h.PricePerUnit} - averagebuy: {averageBuy:0.#########} Value:{h.Price} date:{h.TimeStamp}<br/>";
           tradedata.RealizedTrades.Add(new RealizedTradeData
@@ -78,7 +170,10 @@ namespace BittrexTradeAnalyzer.Controllers
           else
           {
             var pl = ((h.PricePerUnit - averageBuy) / averageBuy) * 100;
+            
+            var plValue2 = h.PricePerUnit*h.Quantity - (averageBuy * h.Quantity);
             buyQuantity -= sold;
+          //  averageSell = (averageSell * prevBuyQ) / buyQuantity + (h.PricePerUnit * ((h.Quantity - h.QuantityRemaining) / buyQuantity));
             // outp += $"Sold {sold} at {h.PricePerUnit} P/L:{pl:0.##}% remaining:{buyQuantity} Value: {h.Price} date: {h.TimeStamp}<br/>";
             tradedata.RealizedTrades.Add(new RealizedTradeData
             {
@@ -89,6 +184,7 @@ namespace BittrexTradeAnalyzer.Controllers
               PricePerUnit = h.PricePerUnit,
               TotalPrice = h.Price,
               TimeStamp = h.TimeStamp,
+              ProfitLossValue = plValue2,
               BuySell = "Sell"
             });
           }
@@ -99,7 +195,7 @@ namespace BittrexTradeAnalyzer.Controllers
       {
         decimal unrealized = ((tick.Last - averageBuy) / averageBuy) * 100;
         outp += $"<h3>Unrealized P/L: last:{tick.Last} {unrealized:0.##} Quantity: {buyQuantity} Value: {buyQuantity * tick.Last}</h3>";
-        tradedata.UnrealizedTrade = new UnrealizedTrade
+        tradedata.UnrealizedTrade = new TotalTrade
         {
           ProfitLoss = unrealized,
           ProfitLossValue = (tick.Last * buyQuantity) - (averageBuy * buyQuantity),
@@ -109,7 +205,24 @@ namespace BittrexTradeAnalyzer.Controllers
         };
 
       }
+      // realized p/l
+      //var soldTotalPrice = tradedata.RealizedTrades.Where(x => x.BuySell == "Sell").Sum(x => x.TotalPrice);
+      //var soldTotalQuantity = tradedata.RealizedTrades.Where(x => x.BuySell == "Sell").Sum(x => x.Quantity);
+      //var totalPriceFromAverageBuy = averageBuy * soldTotalQuantity;
+      //var realizedPL = ((soldTotalPrice-totalPriceFromAverageBuy)/totalPriceFromAverageBuy)*100;
 
+      IEnumerable<RealizedTradeData> sells = tradedata.RealizedTrades.Where(x => x.BuySell == "Sell").ToList();
+      var soldTotalQuantity = sells.Sum(x => x.Quantity);
+      var realizedPL = sells.Sum(x => x.ProfitLoss*(x.Quantity/soldTotalQuantity));
+      var realizedPLValue = sells.Sum(x => x.ProfitLossValue);
+      var value = sells.Sum(x => x.TotalPrice);
+      tradedata.RealizedTrade = new TotalTrade
+      {
+        ProfitLoss = realizedPL,
+        RemainingQuantity = soldTotalQuantity,
+        Value = value,
+        ProfitLossValue = realizedPLValue
+      };
       return tradedata;
     }
 
